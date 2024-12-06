@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI motivation Generator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+            background-color: #f0f4f8;
+        }
+        .container {
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .input-group {
+            margin-bottom: 20px;
+        }
+        .input-group label {
+            display: block;
+            margin-bottom: 10px;
+        }
+        .input-group input, 
+        .input-group select {
+            width: 100%;
+            padding: 10px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        #generateMotivation, #copyMotivation {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+        #generateMotivation:hover, #copyMotivation:hover {
+            background-color: #45a049;
+        }
+        #loading, #errorMessage {
+            text-align: center;
+            color: #666;
+            display: none;
+            margin: 10px 0;
+        }
+        #errorMessage {
+            color: red;
+        }
+        #motivationContainer {
+            margin-top: 20px;
+            background-color: #e6f3ff;
+            border: 1px solid #b8d8f0;
+            padding: 15px;
+            border-radius: 5px;
+            min-height: 100px;
+        }
+        #apiKeyInput, #endpointInput {
+            margin-bottom: 20px;
+        }
+        #copyMotivation {
+            display: none;
+            margin-top: 10px;
+            background-color: #2196F3;
+        }
+        #copyMotivation:hover {
+            background-color: #1976D2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>AI motivation Generator</h2>
+        
+        <div class="input-group">
+            <label for="endpointInput">API Endpoint:</label>
+            <input type="text" id="endpointInput" placeholder="Enter API endpoint (optional), keep it blank to use hack club endpoint">
+        </div>
+
+        <div class="input-group">
+            <label for="apiKeyInput">OpenAI API Key:</label>
+            <input type="password" id="apiKeyInput" placeholder="Enter your OpenAI API Key" value="4S2Q1GCJJ2P41ZG060N9SANB90HLJMQU7FTB8APYDE1MGX9IEDEUGC32JW2F3YXP">
+        </div>
+
+        <div class="input-group">
+            <label for="challengeInput">Current Challenge:</label>
+            <input type="text" id="challengeInput" placeholder="What challenge are you facing? (e.g., studying for final, making a project for high seas)">
+        </div>
+
+        <div class="input-group">
+            <label for="goalInput">Your Goal:</label>
+            <input type="text" id="goalInput" placeholder="What do you want from thing you are doing? (e.g., pass the final exmas, complete the project)">
+        </div>
+        
+        <div class="input-group">
+            <label for="motivationStyleInput">Motivation Style (optional):</label>
+            <input type="text" id="motivationStyleInput" placeholder="Enter motivation style (optinal but Generates better Motivations)">
+        </div>
+        
+        <button id="generateMotivation">Generate Motivation</button>
+        
+        <div id="loading">Generating powerful motivation... Please wait.</div>
+        <div id="errorMessage"></div>
+        
+        <div id="motivationContainer"></div>
+        
+        <button id="copyMotivation">Copy Motivation to clipboard</button>
+    </div>
+
+    <script>
+        const DEFAULT_ENDPOINT = 'https://jamsapi.hackclub.dev/openai/chat/completions';
+
+        const generateMotivationPrompt = (challenge, goal, style) => {
+            const stylePart = style 
+                ? `Using a ${style} style, ` 
+                : '';
+
+            return `${stylePart}Create a motivational message for someone facing the following challenge:
+
+Challenge: ${challenge}
+Goal: ${goal}
+
+IMPORTANT INSTRUCTIONS:
+- Generate a single, powerful motivational message
+- Be authentic and genuinely encouraging
+- Provide ONLY the motivational message text
+- Limit the message to 2-3 sentences
+- Ensure the message is relevant and actionable
+- Focus on empowerment and positive potential`;
+        };
+
+        document.getElementById('generateMotivation').addEventListener('click', async function() {
+            const motivationContainer = document.getElementById('motivationContainer');
+            const copyButton = document.getElementById('copyMotivation');
+            const loadingIndicator = document.getElementById('loading');
+            const errorMessage = document.getElementById('errorMessage');
+
+            motivationContainer.innerHTML = '';
+            copyButton.style.display = 'none';
+            loadingIndicator.style.display = 'block';
+            errorMessage.style.display = 'none';
+
+            const apiKey = document.getElementById('apiKeyInput').value;
+            const endpoint = document.getElementById('endpointInput').value.trim() || DEFAULT_ENDPOINT;
+            const challenge = document.getElementById('challengeInput').value;
+            const goal = document.getElementById('goalInput').value;
+            const style = document.getElementById('motivationStyleInput').value;
+
+            if (!apiKey) {
+                alert('Please enter your OpenAI API Key');
+                loadingIndicator.style.display = 'none';
+                return;
+            }
+            if (!challenge) {
+                alert('Please specify the challenge you are facing');
+                loadingIndicator.style.display = 'none';
+                return;
+            }
+            if (!goal) {
+                alert('Please specify your goal');
+                loadingIndicator.style.display = 'none';
+                return;
+            }
+
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        model: "gpt-4o",
+                        messages: [
+                            {
+                                role: "system", 
+                                content: "You are a powerful and empathetic motivation message generator that creates personalized, actionable, and inspiring motivations."
+                            },
+                            {
+                                role: "user", 
+                                content: generateMotivationPrompt(challenge, goal, style)
+                            }
+                        ],
+                    })
+                });
+
+                const data = await response.json();
+                loadingIndicator.style.display = 'none';
+
+                const motivation = data.choices[0].message.content.trim();
+
+                motivationContainer.innerHTML = `
+                    <p>
+                        <strong>Motivation for ${challenge}${style ? ` (${style} style)` : ''}:</strong><br>
+                        ${motivation}
+                    </p>
+                `;
+                copyButton.style.display = 'block';
+
+            } catch (error) {
+                loadingIndicator.style.display = 'none';
+                errorMessage.textContent = 'Error generating motivation: ' + error.message;
+                errorMessage.style.display = 'block';
+            }
+        });
+
+        document.getElementById('copyMotivation').addEventListener('click', function() {
+            const motivationText = document.getElementById('motivationContainer').innerText;
+            navigator.clipboard.writeText(motivationText.replace(/Motivation for.*:\n/, '').trim()).then(() => {
+                alert('Motivation copied to clipboard!');
+            }).catch(err => {
+                console.error('Could not copy text: ', err);
+                alert('Failed to copy motivation.');
+            });
+        });
+    </script>
+</body>
+</html>
